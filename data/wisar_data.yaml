@@ -1,0 +1,15 @@
+# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# VisDrone2019-DET dataset https://github.com/VisDrone/VisDrone-Dataset by Tianjin University
+# Example usage: python train.py --data VisDrone.yaml
+# parent
+# ├── yolov5
+# └── datasets
+#     └── VisDrone  ← downloads here
+
+
+train: /mnt/mass_storage/gdrive_backup/WiSAR_dataset/AFSL_Dataset/Full_Dataset_Annotated/DO_NOT_MODIFY_Chris_Reviewed/Fused_Dataset/210417_MtErie_Enterprise_VIS_0003_IR_0004/train/
+val: /mnt/mass_storage/gdrive_backup/WiSAR_dataset/AFSL_Dataset/Full_Dataset_Annotated/DO_NOT_MODIFY_Chris_Reviewed/Fused_Dataset/210417_MtErie_Enterprise_VIS_0003_IR_0004/val/
+
+# Classes
+nc: 1  # number of classes
+names: ['Human']  # class names
