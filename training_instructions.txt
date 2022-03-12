@@ -1,0 +1,2 @@
+Training - python train.py --epochs 100 --data ACL_puck_fuse.yaml --batch 100 --cache --cfg models/yolov5s_4chan.yaml --hyp data/hyps/hyp.scratch-4chan.yaml --img-size 720
+Inferencing - python detect.py --weights best_fuse.pt --source fuse/crash_fused_0001.png 
