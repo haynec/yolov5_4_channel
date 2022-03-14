@@ -1,44 +1,83 @@
 from distutils import dep_util
 import cv2
+from cv2 import line
+import torch
 import numpy as np
+import os
+import glob
+
+from utils.plots import Annotator, colors, save_one_box
+from utils.general import xywh2xyxy
+
+line_color=(0,0,255)
 line_thickness=3
-# exactly one box case
-img = '/home/chris/fused_puck_tests/crash/fuse/crash_fused_0001.png'
-box = '/home/chris/yolov5_4_channel/runs/detect/exp21/labels/crash_fused_0001.txt'# more than one box case
-image = cv2.imread(img, cv2.IMREAD_UNCHANGED)
-print(image.shape)
-four_channel_image = cv2.imread(img, cv2.IMREAD_UNCHANGED)
-four_channel_image.shape
-r = four_channel_image[:, :, 0]
-g = four_channel_image[:, :, 1]
-b = four_channel_image[:, :, 2]
-d = four_channel_image[:, :, 3]
-img1 = np.dstack((r,g,b))
-img2 = np.dstack((d,d,d))
-print(img1.shape)
-print(img2.shape)
-h, w = image.shape[0:2]
-boxes = np.loadtxt(box)
-# detect empty text files or reshape boxes as needed
-if len(boxes.shape)==0 or boxes.size==0:
-    print('validate_boxes, input shape 0 -> empty txt file')
-elif len(boxes.shape)==1:
-    print("validate_boxes, input shape 1 -> only 1 box, need to reshape")
-    boxes = boxes.reshape((1,boxes.shape[0]))
-num_boxes = boxes.shape[0]
-for k in range(0, num_boxes):
-    centerX = boxes[k,1]*w
-    centerY = boxes[k,2]*h
-    box_w   = boxes[k,3]*w
-    box_h   = boxes[k,4]*h
-pt1 = (int(centerX - box_w//2), int(centerY - box_h//2))
-pt2 =(int(centerX + box_w//2), int(centerY + box_h//2))
-#box = cv2.rectangle(image, pt1, pt2, [0,255,0],line_thickness)
-box1 = cv2.rectangle(img1, pt1, pt2, [0,255,0],line_thickness)
-box2 = cv2.rectangle(img2, pt1, pt2, [0,255,0],line_thickness)
-cv2.namedWindow('annotations', cv2.WINDOW_NORMAL)
-#cv2.imshow('annotations', image)
-cv2.imshow('Visual', box1)
-cv2.imshow('Depth', box2)
-cv2.waitKey(0);
-cv2.destroyAllWindows()
+im_w = 720
+im_h = 960
+
+root = "/Users/samuelbuckner/Documents/College_Graduate/Coursework/CSE455_ComputerVision/CSE455_Final/yolov5/"
+img_path  = root + "tests/swarmed/fuse/"
+lab_path  = root + "tests/swarmed/fuse/labels/"
+save_path = root + "tests/swarmed/fuse_anno/"
+
+img_list = glob.glob(img_path + "*.png")
+lab_list = []
+
+for img in img_list:
+    head, tail = os.path.split(img)
+    lab_list.append((lab_path + tail).replace(".png", ".txt"))
+
+N = 100
+i = 1
+for img, lab in zip(img_list, lab_list):
+
+    image  = cv2.imread(img, cv2.IMREAD_UNCHANGED)
+
+    try:
+        labels = np.loadtxt(lab, ndmin=2)
+    except:
+        labels = []
+        # head, tail = os.path.split(img)
+        # cv2.imwrite(save_path + tail, image)
+        # continue
+
+    four_channel_image = cv2.imread(img, cv2.IMREAD_UNCHANGED)
+    four_channel_image.shape
+
+    r = four_channel_image[:, :, 0]
+    g = four_channel_image[:, :, 1]
+    b = four_channel_image[:, :, 2]
+    d = four_channel_image[:, :, 3]
+
+    img1 = np.dstack((r,g,b))
+    img2 = np.dstack((d,d,d))
+    annotator1 = Annotator(img1, line_width=line_thickness)
+    annotator2 = Annotator(img2, line_width=line_thickness)
+
+    for label in labels:
+        xywh = label[1:5]
+        xywh[0] *= im_w
+        xywh[1] *= im_h
+        xywh[2] *= im_w
+        xywh[3] *= im_h
+
+        xyxy = (xywh2xyxy(torch.tensor(xywh).view(1, 4))).view(-1).tolist()
+        label_txt = "Puck {:.2f}".format(label[5])
+
+        annotator1.box_label(xyxy, label_txt, color=line_color)
+        annotator2.box_label(xyxy, label_txt, color=line_color)
+
+    box1 = annotator1.result()
+    box2 = annotator2.result()
+    box  = np.concatenate((box1, box2), axis=1)
+
+    head, tail = os.path.split(img)
+    cv2.imwrite(save_path + tail, box)
+
+    i += 1
+    if i % N == 0:
+        print("{:n} images processed...".format(i))
+
+    # cv2.namedWindow('annotations', cv2.WINDOW_NORMAL)
+    # cv2.imshow('Annotated', box)
+    # cv2.waitKey(5000)
+    # cv2.destroyAllWindows()
